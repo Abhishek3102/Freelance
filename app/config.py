@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_file_encoding="utf-8")
 
     # MongoDB
-    MONGO_CONNECTION_STRING: str = "mongodb://localhost:27017/"
+    MONGO_CONNECTION_STRING: str = "mongodb+srv://betterpandey_db_user:lEirOXtu6uj3COUP@blockchain-resume.wi8dbnm.mongodb.net/?appName=blockchain-resume"
     DATABASE_NAME: str = "freelance_db"
 
     # Google Gemini
