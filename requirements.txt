@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+motor
+web3
+pydantic
+python-dotenv
+requests
+qdrant-client
+fastembed
+spacy

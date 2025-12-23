@@ -6,7 +6,7 @@ from bson import ObjectId
 
 from .config import settings
 
-MONGO_CONNECTION_STRING = settings.MONGO_CONNECTION_STRING
+MONGODB_URI = settings.MONGODB_URI
 DATABASE_NAME = settings.DATABASE_NAME
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ async def connect_to_mongo() -> AsyncIOMotorClient:
     """Establishes an asynchronous connection to MongoDB and ensures indexes."""
     logger.info("Attempting to connect to MongoDB...")
     try:
-        client = AsyncIOMotorClient(MONGO_CONNECTION_STRING, serverSelectionTimeoutMS=5000)
+        client = AsyncIOMotorClient(MONGODB_URI, serverSelectionTimeoutMS=5000)
         await client.admin.command('ping')
         logger.info("MongoDB connection successful.")
         

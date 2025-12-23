@@ -79,17 +79,41 @@ async def root():
     """Root endpoint to check API health."""
     return {"message": "Decentralized Freelance Marketplace API is running."}
 
+from app.auth import get_current_user
+
+@app.get("/freelancers/", response_model=List[dict])
+async def get_freelancers(current_user: dict = Depends(get_current_user)):
+    freelancers = await db.users.find({"role": "freelancer"}).to_list(100)
+    for user in freelancers:
+        user["id"] = str(user["_id"])
+        del user["_id"]
+    return freelancers
+
+# ... (Previous imports)
+
 # Endpoint 1: Client posts a new job
 @app.post("/jobs/post/")
-async def post_job(job_post: JobPost, db_client: Depends = Depends(get_db_client)):
+async def post_job(
+    job_post: JobPost, 
+    db_client: Depends = Depends(get_db_client),
+    current_user: dict = Depends(get_current_user) # Protected
+):
     """Logs a new job post and sets status to OPEN."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+        
     try:
+        # Validate that the token user matches the client_address? 
+        # For now, we just ensure they are logged in.
+        # Ideally, we'd link the wallet address to the user profile.
+        
         Web3.to_checksum_address(job_post.client_address)
         
         job_data = job_post.dict()
+        job_data["created_by_user_id"] = current_user.get("sub") # Link to NextAuth User ID
         job_data["status"] = JOB_STATUSES["OPEN"]
-        job_data["escrow_contract_id"] = None # On-chain ID
-        job_data["freelancer_address"] = None # To be filled upon acceptance
+        job_data["escrow_contract_id"] = None 
+        job_data["freelancer_address"] = None 
         
         job_id = await log_job_post(db_client, job_data)
         
@@ -99,6 +123,37 @@ async def post_job(job_post: JobPost, db_client: Depends = Depends(get_db_client
     except Exception as e:
         logger.error(f"Error posting job: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to post job: {str(e)}")
+
+# ... (Scanning down to Rating Endpoint)
+
+# Endpoint 6: Submit Immutable Rating (Platform Action)
+@app.post("/rating/submit/")
+async def submit_rating(
+    rating: RatingSubmission, 
+    db_client: Depends = Depends(get_db_client),
+    current_user: dict = Depends(get_current_user) # Protected
+):
+    """
+    Submits a final rating. Protected endpoint.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
+    try:
+        # 1. Basic validation
+        job_doc = await get_job_by_id(db_client, rating.job_id)
+        if not job_doc:
+            raise HTTPException(status_code=404, detail="Job not found.")
+        
+        # 2. Call the service layer to handle IPFS and Blockchain TX
+        await submit_immutable_rating_to_contract(rating, db_client)
+        
+        return {"message": "Immutable rating successfully recorded on the blockchain."}
+
+    except Exception as e:
+        logger.error(f"Error submitting rating: {e}", exc_info=True)
+        detail = str(e) if "Blockchain contract rejected" in str(e) else "Internal server error during blockchain transaction."
+        raise HTTPException(status_code=500, detail=detail)
 
 # Endpoint 2: AI matches freelancers to the job
 @app.post("/jobs/{job_id}/match/", response_model=List[MatchResult])
