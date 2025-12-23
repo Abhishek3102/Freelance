@@ -5,7 +5,11 @@ import logging
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore", env_file_encoding="utf-8")
 
+<<<<<<< HEAD
     MONGODB_URI: str
+=======
+    MONGO_CONNECTION_STRING: str
+>>>>>>> 1c0098c328330ac975a2a72a8ae00205d8c08abe
     DATABASE_NAME: str = "freelance_db"
 
     GEMINI_API_KEY: str
@@ -29,7 +33,6 @@ class Settings(BaseSettings):
     PINATA_API_KEY: str = ""
     PINATA_SECRET_API_KEY: str = ""
 
-
     # Logging
     LOG_LEVEL: str = "INFO"
 
@@ -44,4 +47,8 @@ print("Escrow Contract:", settings.ESCROW_CONTRACT_ADDRESS)
 print("Rating Contract:", settings.RATING_CONTRACT_ADDRESS)
 print("Platform Wallet:", settings.PLATFORM_ADDRESS)
 print("RPC URL:", settings.SEPOLIA_RPC_URL)
+<<<<<<< HEAD
 print("MongoDB URI:", settings.MONGODB_URI)
+=======
+print("MongoDB URI:", settings.MONGO_CONNECTION_STRING)
+>>>>>>> 1c0098c328330ac975a2a72a8ae00205d8c08abe
