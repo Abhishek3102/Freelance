@@ -32,6 +32,8 @@ export const metadata: Metadata = {
 }
 
 import AuthGuard from "@/components/auth-guard" 
+import { Toaster } from "@/components/ui/toaster"
+import { NotificationListener } from "@/components/notification-listener" 
 
 export default function RootLayout({
   children,
@@ -46,6 +48,8 @@ export default function RootLayout({
                 {children}
             </AuthGuard>
           <Analytics />
+          <Toaster />
+          <NotificationListener />
         </Providers>
       </body>
     </html>

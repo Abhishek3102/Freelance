@@ -71,6 +71,7 @@ class ProposalIn(BaseModel):
     """Input model for a freelancer submitting a proposal."""
     freelancer_address: ChecksumAddress = Field(..., description="The freelancer's wallet address (EVM).")
     message: str = Field(..., description="Cover message detailing their approach.")
+    resume_text: str = Field(..., description="Text content of the resume.")
     
 class Proposal(BaseModel):
     """A proposal document stored in the database."""
@@ -105,3 +106,12 @@ class RatingSubmission(BaseModel):
         if len(v.strip()) < 10:
             raise ValueError('Review text must be at least 10 characters long.')
         return v
+
+class Notification(BaseModel):
+    """Notification for a user."""
+    id: Optional[str] = None
+    user_id: str = Field(..., description="The user's AuthID (sub) this notification belongs to.")
+    message: str = Field(..., description="Content of the notification.")
+    type: str = Field("INFO", description="Type: INFO, SUCCESS, WARNING, ERROR.")
+    read: bool = Field(False, description="Whether the notification has been read.")
+    created_at: Any = Field(None, description="Timestamp.")

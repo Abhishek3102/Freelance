@@ -7,7 +7,7 @@ import jwt from "jsonwebtoken"
 console.log("NEXTAUTH_SECRET loaded:", !!process.env.NEXTAUTH_SECRET)
 
 // FALLBACK SECRET for debugging: If env is missing, use this fixed string.
-const SECRET = process.env.NEXTAUTH_SECRET || "temp_secret_key_12345"
+const SECRET = process.env.NEXTAUTH_SECRET || "secret_placeholder_123"
 
 export const authOptions: NextAuthOptions = {
     secret: SECRET,
@@ -37,6 +37,10 @@ export const authOptions: NextAuthOptions = {
                 session.user.role = token.role as string | undefined
                 session.user.gender = token.gender as string | undefined
                 session.user.age = token.age as number | undefined
+                // @ts-ignore
+                session.accessToken = jwt.sign(token, SECRET) // Re-sign to pass to client if needed, or just pass raw if available. 
+                // Actually, 'token' here IS the decoded payload. We need to re-encode it to send to backend or use the raw one. 
+                // Since we use custom encode/decode, we can just re-sign it.
             }
             return session
         },

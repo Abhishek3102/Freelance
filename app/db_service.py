@@ -88,12 +88,28 @@ async def update_job_by_id(client: AsyncIOMotorClient, job_id: str, update_field
 # --- New Proposal Functions ---
 
 async def log_proposal(client: AsyncIOMotorClient, proposal_data: Dict[str, Any]) -> str:
-    """Logs a new proposal from a freelancer."""
+    """Logs a new proposal or updates an existing one."""
     try:
         db = client[DATABASE_NAME]
-        result = await db["proposals"].insert_one(proposal_data)
-        logger.info(f"Logged new proposal for job {proposal_data.get('job_id')} by {proposal_data.get('freelancer_address')}.")
-        return str(result.inserted_id)
+        
+        # Check if proposal already exists for this job/freelancer combo
+        existing = await db["proposals"].find_one({
+            "job_id": proposal_data["job_id"],
+            "freelancer_address": proposal_data["freelancer_address"]
+        })
+
+        if existing:
+            await db["proposals"].update_one(
+                {"_id": existing["_id"]},
+                {"$set": proposal_data}
+            )
+            logger.info(f"Updated existing proposal for job {proposal_data.get('job_id')}")
+            return str(existing["_id"])
+        else:
+            result = await db["proposals"].insert_one(proposal_data)
+            logger.info(f"Logged new proposal for job {proposal_data.get('job_id')} by {proposal_data.get('freelancer_address')}.")
+            return str(result.inserted_id)
+            
     except Exception as e:
         logger.error(f"Failed to log proposal: {e}", exc_info=True)
         raise
@@ -110,3 +126,81 @@ async def update_proposal_status(client: AsyncIOMotorClient, proposal_id: str, s
     except Exception as e:
         logger.error(f"Failed to update proposal {proposal_id} status: {e}", exc_info=True)
         raise
+
+async def get_proposals_for_job(client: AsyncIOMotorClient, job_id: str) -> List[Dict[str, Any]]:
+    """Retrieves all proposals for a specific job."""
+    try:
+        db = client[DATABASE_NAME]
+        proposals = await db["proposals"].find({"job_id": job_id}).to_list(None)
+        # Convert ObjectId to str
+        for p in proposals:
+            p["id"] = str(p["_id"])
+            del p["_id"]
+        return proposals
+    except Exception as e:
+        logger.error(f"Failed to fetch proposals for job {job_id}: {e}", exc_info=True)
+        return []
+
+async def get_all_jobs(client: AsyncIOMotorClient, limit: int = 100, posted_by_user_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Retrieves a list of jobs, sorted by newest first. Optionally filters by user_id."""
+    try:
+        db = client[DATABASE_NAME]
+        query = {}
+        if posted_by_user_id:
+             query["created_by_user_id"] = posted_by_user_id
+             
+        jobs = await db["jobs"].find(query).sort("_id", -1).limit(limit).to_list(limit)
+        # Convert ObjectId to str
+        for job in jobs:
+            job["id"] = str(job["_id"])
+            del job["_id"]
+        return jobs
+    except Exception as e:
+        logger.error(f"Failed to fetch jobs: {e}", exc_info=True)
+        return []
+
+# --- Notification Functions ---
+
+async def log_notification(client: AsyncIOMotorClient, user_id: str, message: str, type: str = "INFO"):
+    """Logs a notification for a user."""
+    try:
+        db = client[DATABASE_NAME]
+        from datetime import datetime
+        notification = {
+            "user_id": user_id,
+            "message": message,
+            "type": type,
+            "read": False,
+            "created_at": datetime.utcnow()
+        }
+        await db["notifications"].insert_one(notification)
+        logger.info(f"Logged notification for user {user_id}")
+    except Exception as e:
+        logger.error(f"Failed to log notification: {e}", exc_info=True)
+
+async def get_user_notifications(client: AsyncIOMotorClient, user_id: str, limit: int = 50) -> List[Dict]:
+    """Retrieves unread notifications for a user."""
+    try:
+        db = client[DATABASE_NAME]
+        notifications = await db["notifications"].find(
+            {"user_id": user_id}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+        
+        for n in notifications:
+            n["id"] = str(n["_id"])
+            del n["_id"]
+        return notifications
+    except Exception as e:
+        logger.error(f"Failed to fetch notifications: {e}", exc_info=True)
+        return []
+
+async def mark_notification_read(client: AsyncIOMotorClient, notification_id: str):
+    """Marks a notification as read."""
+    try:
+        db = client[DATABASE_NAME]
+        await db["notifications"].update_one(
+            {"_id": ObjectId(notification_id)},
+            {"$set": {"read": True}}
+        )
+    except Exception as e:
+        logger.error(f"Failed to mark notification read: {e}", exc_info=True)

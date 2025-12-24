@@ -2,11 +2,21 @@
 
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Zap } from "lucide-react"
+import { Zap, LogOut, User, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useEffect, useState } from "react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { NotificationsDropdown } from "@/components/notifications-dropdown"
 
 export default function Navigation() {
   const router = useRouter()
@@ -36,56 +46,132 @@ export default function Navigation() {
   if (!mounted) return null
 
   return (
-    <nav className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+    <nav className="border-b border-white/10 bg-black/20 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Zap className="w-5 h-5 text-primary-foreground" />
+          <Link href="/" className="flex items-center gap-2 group">
+            <div className="w-8 h-8 bg-primary/80 group-hover:bg-primary rounded-lg flex items-center justify-center transition-colors shadow-lg shadow-primary/20">
+              <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-foreground">Freelance</span>
+            <span className="font-bold text-lg text-white group-hover:text-primary transition-colors">Freelance</span>
           </Link>
 
           <div className="hidden md:flex gap-8">
-            {isConnected && (
+            {session?.user && (
               <>
-                <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition">
-                  Dashboard
-                </Link>
-                <Link href="/jobs/create" className="text-muted-foreground hover:text-foreground transition">
-                  Post Job
-                </Link>
+                {session.user.role === "client" && (
+                    <>
+                    {isConnected ? (
+                        <Link href="/client/jobs" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        Leaderboard
+                        </Link>
+                    ) : (
+                        <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
+                        Leaderboard
+                        </span>
+                    )}
+
+                    {isConnected ? (
+                        <Link href="/jobs/create" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        Post Job
+                        </Link>
+                    ) : (
+                        <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
+                        Post Job
+                        </span>
+                    )}
+                    </>
+                )}
+                
+                {session.user.role !== "client" && (
+                    isConnected ? (
+                        <Link href="/jobs/create" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        Post Job
+                        </Link>
+                    ) : (
+                        <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
+                        Post Job
+                        </span>
+                    )
+                )}
               </>
             )}
           </div>
 
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-4 items-center">
+            {/* Notifications */}
+            {session?.user && <NotificationsDropdown />}
+
             {/* Auth (Identity) */}
             {session?.user ? (
-               <div className="flex items-center gap-2 mr-4">
-                  <span className="text-sm text-foreground">{session.user.name}</span>
-                  <Button variant="ghost" size="sm" onClick={() => signOut()}>Logout</Button>
-               </div>
+               <DropdownMenu>
+                 <DropdownMenuTrigger asChild>
+                   <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10 focus:ring-0">
+                     <Avatar className="h-10 w-10 border-2 border-primary/20">
+                       <AvatarImage src={session.user.image || ""} alt={session.user.name || "User"} />
+                       <AvatarFallback className="bg-primary/20 text-white font-medium">
+                         {session.user.name?.charAt(0).toUpperCase() || "U"}
+                       </AvatarFallback>
+                     </Avatar>
+                   </Button>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent className="w-56 bg-black/80 backdrop-blur-xl border-white/10 text-white" align="end" forceMount>
+                   <DropdownMenuLabel className="font-normal">
+                     <div className="flex flex-col space-y-1">
+                       <p className="text-sm font-medium leading-none">{session.user.name}</p>
+                       <p className="text-xs leading-none text-white/50">{session.user.email}</p>
+                       {session.user.role && (
+                           <p className="text-xs font-semibold text-primary mt-1 capitalize">{session.user.role} Account</p>
+                       )}
+                     </div>
+                   </DropdownMenuLabel>
+                   <DropdownMenuSeparator className="bg-white/10" />
+                   <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer group">
+                     <User className="mr-2 h-4 w-4 text-white/70 group-hover:text-white" />
+                     <span>Profile</span>
+                   </DropdownMenuItem>
+                   <DropdownMenuItem className="focus:bg-white/10 focus:text-white cursor-pointer group">
+                     <Settings className="mr-2 h-4 w-4 text-white/70 group-hover:text-white" />
+                     <span>Settings</span>
+                   </DropdownMenuItem>
+                   <DropdownMenuSeparator className="bg-white/10" />
+                   <DropdownMenuItem onClick={() => signOut()} className="focus:bg-red-500/20 focus:text-red-400 text-red-400 cursor-pointer">
+                     <LogOut className="mr-2 h-4 w-4" />
+                     <span>Log out</span>
+                   </DropdownMenuItem>
+                 </DropdownMenuContent>
+               </DropdownMenu>
             ) : (
-                <Button variant="ghost" size="sm" onClick={() => signIn()} className="mr-4">Login</Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => signIn()} 
+                  className="text-white hover:text-primary hover:bg-white/5 transition-colors"
+                >
+                  Login
+                </Button>
             )}
 
             {/* Web3 (Wallet) */}
             {isConnected && address ? (
-              <>
-                <span className="px-4 py-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 bg-white/5 rounded-full pl-3 pr-1 py-1 border border-white/10 hover:border-white/20 transition-all">
+                <span className="text-xs text-white/80 font-mono">
                   {address.slice(0, 6)}...{address.slice(-4)}
                 </span>
                 <Button
-                  variant="outline"
+                  variant="ghost"
+                  size="icon"
                   onClick={handleDisconnect}
-                  className="border-border text-foreground hover:bg-card bg-transparent"
+                  className="h-7 w-7 rounded-full hover:bg-white/10 text-white/50 hover:text-white transition-colors"
                 >
-                  Disconnect
+                  <LogOut className="h-3 w-3" />
                 </Button>
-              </>
+              </div>
             ) : (
-              <Button onClick={handleConnectWallet} className="bg-primary hover:bg-primary/90">
+              <Button 
+                onClick={handleConnectWallet} 
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-full px-6"
+              >
                 Connect Wallet
               </Button>
             )}

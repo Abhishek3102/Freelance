@@ -11,6 +11,7 @@ declare module "next-auth" {
             gender?: string
             age?: number
         } & DefaultSession["user"]
+        accessToken?: string
     }
 
     interface User {

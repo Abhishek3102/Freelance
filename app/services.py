@@ -155,6 +155,31 @@ async def match_freelancers_to_job(client: AsyncIOMotorClient, job_data: JobPost
     logger.info(f"Matching complete. Found {len(matches_sorted)} matches in {int((time.time() - start_time) * 1000)}ms.")
     return matches_sorted
 
+def score_proposal(job_description: str, resume_text: str) -> float:
+    """
+    Calculates a match score (0-100) between a resume and a job description 
+    using vector cosine similarity.
+    """
+    if not resume_text: return 0.0
+    
+    # Generate embeddings
+    try:
+        job_vec = list(embedding_model.embed([job_description]))[0]
+        resume_vec = list(embedding_model.embed([resume_text]))[0]
+        
+        # Calculate Cosine Similarity
+        from numpy import dot
+        from numpy.linalg import norm
+        
+        cos_sim = dot(job_vec, resume_vec) / (norm(job_vec) * norm(resume_vec))
+        
+        # Scale to 0-100
+        score = max(0, min(100, cos_sim * 100))
+        return round(float(score), 2)
+    except Exception as e:
+        logger.error(f"Error scoring proposal: {e}")
+        return 0.0
+
 async def create_escrow_contract_tx(
     job_id: str, 
     client_address: ChecksumAddress,
@@ -189,7 +214,8 @@ async def create_escrow_contract_tx(
         return tx_hash.hex(), contract_job_id
     except Exception as e:
         logger.error(f"Failed to submit escrow creation transaction: {e}", exc_info=True)
-        raise Exception("Failed to submit escrow creation transaction to blockchain.")
+        # Expose the real error message to the frontend for debugging
+        raise Exception(f"Failed to submit escrow creation transaction: {str(e)}")
 
 # --- Pinata IPFS Logic ---
 
