@@ -27,7 +27,8 @@ from app.auth import get_current_user
 from app.seed_data import seed_jobs
 from app.logging_config import setup_logging
 from app.constants import JOB_STATUSES, PROPOSAL_STATUSES
-from app.websockets import manager
+from app.config import settings
+from app.socket_manager import manager
 from web3 import Web3
 
 # ... (Logging setup)
@@ -382,24 +383,29 @@ async def accept_proposal(
             "escrow_contract_id": contract_job_id
         })
 
-        # --- Notification Logic ---
-        # Notify the Freelancer
+        # --- Update Proposal and Notify Freelancer ---
         try:
             db = db_client[settings.DATABASE_NAME]
-            # Find the proposal to get freelancer's user_id
+            # Find the proposal to update its status using case-insensitive regex for the address
             proposal = await db["proposals"].find_one({
                 "job_id": job_id,
-                "freelancer_address": freelancer_address
+                "freelancer_address": {"$regex": f"^{freelancer_address}$", "$options": "i"}
             })
-            if proposal and proposal.get("user_id"):
-                await log_notification(
-                    db_client,
-                    proposal["user_id"],
-                    f"Offer Accepted! You have been hired for '{job_doc['title']}'. Contract creating...",
-                    "SUCCESS"
-                )
+            if proposal:
+                from app.db_service import update_proposal_status
+                await update_proposal_status(db_client, str(proposal["_id"]), "ACCEPTED")
+                
+                if proposal.get("user_id"):
+                    await log_notification(
+                        db_client,
+                        proposal["user_id"],
+                        f"Offer Accepted! You have been hired for '{job_doc['title']}'. Contract creating...",
+                        "SUCCESS"
+                    )
+            else:
+                logger.error(f"Could not find proposal to mark as accepted: job_id={job_id}, freelancer_address={freelancer_address}")
         except Exception as e:
-            logger.error(f"Failed to notify freelancer: {e}")
+            logger.error(f"Failed to update proposal status or notify freelancer: {e}")
 
         return {
             "message": "Proposal accepted and Escrow Job created on-chain.",
@@ -447,6 +453,68 @@ async def get_job_status(job_id: str, db_client: Depends = Depends(get_db_client
         logger.error(f"Error fetching job status for {job_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to fetch job status: {str(e)}")
 
+
+# Endpoint 5.4: Fund Escrow (After Client Deposits)
+@app.post("/jobs/{job_id}/fund/")
+async def fund_job(job_id: str, db_client: Depends = Depends(get_db_client)):
+    """Called by frontend after deposit() TX confirms on Web3 to sync backend state."""
+    try:
+        await update_job_by_id(db_client, job_id, {"status": JOB_STATUSES["ESCROW_ACTIVE"]})
+        return {"message": "Job escrow funded. Work can now begin."}
+    except Exception as e:
+        logger.error(f"Error funding job {job_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fund job: {str(e)}")
+
+# Endpoint 5.5: Complete Job (After Escrow Release)
+@app.post("/jobs/{job_id}/complete/")
+async def complete_job(job_id: str, db_client: Depends = Depends(get_db_client)):
+    """Called by frontend after releasePayment TX succeeds on Web3 to sync backend state."""
+    try:
+        # Use literal "Job finished and payment released." from constants manually or fallback
+        await update_job_by_id(db_client, job_id, {"status": "Job finished and payment released."})
+        return {"message": "Job successfully marked as completed."}
+    except Exception as e:
+        logger.error(f"Error completing job {job_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to complete job: {str(e)}")
+
+# Endpoint 5.6: Dispute Job (After Escrow Dispute)
+@app.post("/jobs/{job_id}/dispute/")
+async def dispute_job(job_id: str, db_client: Depends = Depends(get_db_client)):
+    """Called by frontend after raiseDispute TX succeeds on Web3 to sync backend state."""
+    try:
+        job_doc = await get_job_by_id(db_client, job_id)
+        if not job_doc:
+            raise HTTPException(status_code=404, detail="Job not found.")
+        
+        await update_job_by_id(db_client, job_id, {"status": JOB_STATUSES["DISPUTED"]})
+        
+        # Notify the freelancer about the dispute
+        try:
+            db = db_client[settings.DATABASE_NAME]
+            freelancer_address = job_doc.get("freelancer_address", "")
+            logger.info(f"[Dispute] Looking for proposal: job_id={job_id}, freelancer_address={freelancer_address}")
+            proposal = await db["proposals"].find_one({
+                "job_id": job_id,
+                "freelancer_address": {"$regex": f"^{freelancer_address}$", "$options": "i"}
+            })
+            logger.info(f"[Dispute] Proposal found: {proposal is not None}, has user_id: {proposal.get('user_id') if proposal else 'N/A'}")
+            if proposal and proposal.get("user_id"):
+                await log_notification(
+                    db_client,
+                    proposal["user_id"],
+                    f"⚠️ Dispute raised on '{job_doc['title']}'. Funds are frozen. An arbiter will review and resolve.",
+                    "WARNING"
+                )
+                logger.info(f"[Dispute] Notification sent to freelancer user_id={proposal['user_id']}")
+            else:
+                logger.warning(f"[Dispute] Could not notify freelancer - proposal not found or missing user_id")
+        except Exception as e:
+            logger.error(f"Failed to notify freelancer of dispute: {e}", exc_info=True)
+
+        return {"message": "Job marked as disputed. Arbiter notified."}
+    except Exception as e:
+        logger.error(f"Error disputing job {job_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to dispute job: {str(e)}")
 
 # Endpoint 6: Submit Immutable Rating (Platform Action)
 @app.post("/rating/submit/")

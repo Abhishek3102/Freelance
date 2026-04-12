@@ -29,7 +29,7 @@ w3 = Web3(HTTPProvider(settings.SEPOLIA_RPC_URL))
 
 # Mock ABIs (Can be replaced with artifacts reading in future)
 ESCROW_ABI = json.loads('''
-[{"inputs":[{"internalType":"address","name":"_arbiter","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"},{"indexed":false,"internalType":"address","name":"client","type":"address"},{"indexed":false,"internalType":"address","name":"freelancer","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"contractId","type":"uint256"}],"name":"JobCreated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"depositedAmount","type":"uint256"}],"name":"JobFunded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"}],"name":"PaymentReleased","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"}],"name":"DisputeRaised","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"},{"indexed":false,"internalType":"address","name":"winner","type":"address"},{"indexed":false,"internalType":"uint256","name":"winnerShare","type":"uint256"}],"name":"DisputeResolved","type":"event"},{"inputs":[],"name":"ARBITER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address payable","name":"_freelancer","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_contractId","type":"uint256"}],"name":"createJob","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"}],"name":"deposit","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"}],"name":"releasePayment","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"}],"name":"raiseDispute","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"},{"internalType":"uint256","name":"_clientShare","type":"uint256"}],"name":"resolveDispute","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"jobs","outputs":[{"internalType":"address payable","name":"client","type":"address"},{"internalType":"address payable","name":"freelancer","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"enum FreelanceEscrow.Status","name":"status","type":"uint8"},{"internalType":"uint256","name":"contractId","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"jobDeposit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"nextJobId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
+[{"inputs":[{"internalType":"address","name":"_arbiter","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"},{"indexed":false,"internalType":"address","name":"client","type":"address"},{"indexed":false,"internalType":"address","name":"freelancer","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"contractId","type":"uint256"}],"name":"JobCreated","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"depositedAmount","type":"uint256"}],"name":"JobFunded","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"}],"name":"PaymentReleased","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"}],"name":"DisputeRaised","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"uint256","name":"jobId","type":"uint256"},{"indexed":false,"internalType":"address","name":"winner","type":"address"},{"indexed":false,"internalType":"uint256","name":"winnerShare","type":"uint256"}],"name":"DisputeResolved","type":"event"},{"inputs":[],"name":"ARBITER","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address payable","name":"_client","type":"address"},{"internalType":"address payable","name":"_freelancer","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"},{"internalType":"uint256","name":"_contractId","type":"uint256"}],"name":"createJob","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"}],"name":"deposit","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"}],"name":"releasePayment","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"}],"name":"raiseDispute","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_jobId","type":"uint256"},{"internalType":"uint256","name":"_clientShare","type":"uint256"}],"name":"resolveDispute","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"jobs","outputs":[{"internalType":"address payable","name":"client","type":"address"},{"internalType":"address payable","name":"freelancer","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"},{"internalType":"enum FreelanceEscrow.Status","name":"status","type":"uint8"},{"internalType":"uint256","name":"contractId","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"jobDeposit","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"nextJobId","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"}]
 ''') 
 RATING_ABI = json.loads('''
 [{"inputs":[{"internalType":"address","name":"_platformApiAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"freelancer","type":"address"},{"indexed":false,"internalType":"uint256","name":"score","type":"uint256"},{"indexed":false,"internalType":"bytes32","name":"ipfsHash","type":"bytes32"}],"name":"RatingSubmitted","type":"event"},{"inputs":[{"internalType":"address","name":"_freelancer","type":"address"},{"internalType":"uint256","name":"_score","type":"uint256"},{"internalType":"bytes32","name":"_ipfsHash","type":"bytes32"}],"name":"submitRating","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_freelancer","type":"address"}],"name":"getAverageScore","outputs":[{"internalType":"uint256","name":"avgScore","type":"uint256"}],"stateMutability":"view","type":"function"}]
@@ -41,10 +41,16 @@ RATING_CONTRACT: Contract = w3.eth.contract(address=settings.RATING_CONTRACT_ADD
 
 # --- Qdrant & Embedding Setup ---
 try:
-    qdrant_client = QdrantClient(
-        url=settings.QDRANT_URL, 
-        api_key=settings.QDRANT_API_KEY
-    )
+    if settings.QDRANT_URL:
+        qdrant_client = QdrantClient(
+            url=settings.QDRANT_URL, 
+            api_key=settings.QDRANT_API_KEY
+        )
+    else:
+        # Fallback to local file-based Qdrant if no URL is provided
+        logger.info("No QDRANT_URL provided. Using local disk-based Qdrant client.")
+        qdrant_client = QdrantClient(path="local_qdrant_db")
+        
     embedding_model = TextEmbedding() # Defaults to BAAI/bge-small-en-v1.5
     QDRANT_COLLECTION = "freelancer_profiles"
     
@@ -193,12 +199,16 @@ async def create_escrow_contract_tx(
     contract_job_id = ESCROW_CONTRACT.functions.nextJobId().call()
     budget_wei = w3.to_wei(budget_eth, 'ether')
     platform_address: ChecksumAddress = w3.to_checksum_address(settings.PLATFORM_ADDRESS)
+    # Ensure addresses are in EIP-55 checksum format (web3.py requires this)
+    freelancer_address = w3.to_checksum_address(freelancer_address)
+    client_address = w3.to_checksum_address(client_address)
     
     try:
         tx = ESCROW_CONTRACT.functions.createJob(
+            client_address,
             freelancer_address, 
             budget_wei, 
-            int(job_id) 
+            contract_job_id  # on-chain sequential job counter (not MongoDB ID)
         ).build_transaction({
             'chainId': settings.CHAIN_ID, # hardhat local is 31337 or 1337
             'gas': 500000, 
@@ -208,7 +218,7 @@ async def create_escrow_contract_tx(
         })
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=settings.PRIVATE_KEY)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         w3.eth.wait_for_transaction_receipt(tx_hash)
         
         return tx_hash.hex(), contract_job_id
@@ -302,7 +312,7 @@ async def submit_immutable_rating_to_contract(rating_data: RatingSubmission, cli
         })
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=settings.PRIVATE_KEY)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         w3.eth.wait_for_transaction_receipt(tx_hash)
         
         logger.info(f"Rating TX successful: {tx_hash.hex()}. Real IPFS CID: {ipfs_hash_str}")

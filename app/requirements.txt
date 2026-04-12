@@ -10,3 +10,6 @@ fastembed
 spacy
 pypdf
 google-generativeai
+websockets
+pydantic-settings
+PyJWT
