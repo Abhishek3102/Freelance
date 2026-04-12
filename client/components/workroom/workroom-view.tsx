@@ -1,34 +1,88 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
+import { ESCROW_ABI } from "@/lib/abis"
+import { useWriteContract, useWaitForTransactionReceipt, useAccount } from "wagmi"
+
 export default function WorkroomView({ jobId }: { jobId: string }) {
   const [showDispute, setShowDispute] = useState(false)
-  const userAddress = typeof window !== "undefined" ? localStorage.getItem("walletAddress") : null
+  const { address: userAddress } = useAccount()
+  
+  const [jobData, setJobData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [synced, setSynced] = useState(false)
 
-  // Mock data
-  const jobData = {
-    id: jobId,
-    title: "Build React Dashboard",
-    description: "Create a responsive dashboard with charts and analytics",
-    budget: "2.5",
-    freelancer: "Alex Chen",
-    freelancerAddress: "0x123...",
-    clientAddress: "0x456...",
-    status: "ACTIVE",
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+  const pendingActionRef = useRef<"RELEASE" | "DISPUTE" | null>(null)
+
+  const { data: hash, isPending, writeContract } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
+    hash,
+  })
+
+  // Watch for transaction success and sync with backend
+  useEffect(() => {
+    if (isSuccess) {
+      const action = pendingActionRef.current
+      console.log("[Workroom] TX confirmed. Pending action:", action)
+      if (action === "RELEASE") {
+         fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/jobs/${jobId}/complete/`, { method: "POST" })
+          .then(res => { if (!res.ok) throw new Error(`Backend complete failed: ${res.status}`); return res })
+          .then(() => fetchStatus().then(() => setSynced(true)))
+          .catch(err => console.error("[Workroom] Failed to sync RELEASE:", err))
+      } else if (action === "DISPUTE") {
+         fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/jobs/${jobId}/dispute/`, { method: "POST" })
+          .then(res => { if (!res.ok) throw new Error(`Backend dispute failed: ${res.status}`); return res })
+          .then(() => fetchStatus().then(() => setSynced(true)))
+          .catch(err => console.error("[Workroom] Failed to sync DISPUTE:", err))
+      } else {
+        console.warn("[Workroom] TX confirmed but no pending action was set in ref!")
+      }
+    }
+  }, [isSuccess])
+
+  const fetchStatus = async () => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+      const res = await fetch(`${apiUrl}/jobs/${jobId}/status/`)
+      if (res.ok) {
+        const data = await res.json()
+        setJobData(data)
+      }
+    } catch(e) {
+      console.error(e)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const isClient = userAddress?.toLowerCase() === jobData.clientAddress.toLowerCase()
+  useEffect(() => {
+    fetchStatus()
+  }, [jobId])
+
+  if (loading) return <div className="text-center py-20">Loading Workroom...</div>
+  if (!jobData) return <div className="text-center py-20 text-red-500">Failed to load job data</div>
+
+  const isClient = userAddress?.toLowerCase() === jobData?.client_address?.toLowerCase()
+  const isFreelancer = userAddress?.toLowerCase() === jobData?.freelancer_address?.toLowerCase()
+  
+  // Only the client and freelancer should normally see this page
+  const isAuthorized = isClient || isFreelancer
 
   const handleReleasePayment = async () => {
     try {
-      // TODO: Call POST /jobs/{id}/release API endpoint
-      console.log("Releasing payment...")
+      pendingActionRef.current = "RELEASE" // flag for the watcher
+      const contractId = jobData.escrow_contract_id
+      const contractAddress = process.env.NEXT_PUBLIC_ESCROW_CONTRACT_ADDRESS as `0x${string}`;
+      writeContract({
+        address: contractAddress,
+        abi: ESCROW_ABI,
+        functionName: 'releasePayment',
+        args: [BigInt(contractId)],
+      })
     } catch (error) {
       console.error("Error releasing payment:", error)
     }
@@ -36,8 +90,15 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
 
   const handleRaiseDispute = async () => {
     try {
-      // TODO: Call POST /jobs/{id}/dispute API endpoint
-      console.log("Raising dispute...")
+      pendingActionRef.current = "DISPUTE" // flag for the watcher
+      const contractId = jobData.escrow_contract_id
+      const contractAddress = process.env.NEXT_PUBLIC_ESCROW_CONTRACT_ADDRESS as `0x${string}`;
+      writeContract({
+        address: contractAddress,
+        abi: ESCROW_ABI,
+        functionName: 'raiseDispute',
+        args: [BigInt(contractId)],
+      })
     } catch (error) {
       console.error("Error raising dispute:", error)
     }
@@ -45,8 +106,8 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
 
   const handleSubmitWork = async () => {
     try {
-      // TODO: Call POST /jobs/{id}/submit API endpoint
-      console.log("Submitting work...")
+      // Stub for file submission implementation (link or ipfs)
+      alert("Work Submission placeholder. Currently off-chain collaboration takes place here.")
     } catch (error) {
       console.error("Error submitting work:", error)
     }
@@ -54,13 +115,14 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {!isAuthorized && <div className="mb-4 p-4 bg-red-900/50 border border-red-500 rounded text-red-200">Warning: You are not recognized as the client or the freelancer for this job. You are in read-only mode.</div>}
       <div className="mb-8">
         <div className="flex justify-between items-start mb-4">
           <div>
             <h1 className="text-3xl font-bold text-foreground">{jobData.title}</h1>
-            <p className="text-muted-foreground mt-2">Workroom • Active</p>
+            <p className="text-muted-foreground mt-2">Workroom • {isClient ? "Client View" : isFreelancer ? "Freelancer View" : "Public View"}</p>
           </div>
-          <Badge className="bg-accent/20 text-accent border-accent/30">Active</Badge>
+          <Badge className="bg-accent/20 text-accent border-accent/30">{jobData.proposal_status}</Badge>
         </div>
       </div>
 
@@ -72,7 +134,7 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
               <CardTitle>Job Description</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground">{jobData.description}</p>
+              <p className="text-muted-foreground">The workroom serves as your decentralized hub to complete the requested deliverables. Off-chain coordination and work submission occurs here until completion is approved via smart contract.</p>
             </CardContent>
           </Card>
 
@@ -82,16 +144,16 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Created</span>
-                <span className="text-foreground font-semibold">{jobData.createdAt.toLocaleDateString()}</span>
+                <span className="text-muted-foreground">Escrow Contract ID</span>
+                <span className="text-foreground font-semibold">#{jobData.escrow_contract_id}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Due</span>
-                <span className="text-foreground font-semibold">{jobData.dueDate.toLocaleDateString()}</span>
+                <span className="text-muted-foreground">Smart Contract Status</span>
+                <span className="text-foreground font-semibold">{jobData.escrow_status}</span>
               </div>
               <div className="flex justify-between pt-3 border-t border-border">
-                <span className="text-muted-foreground">Freelancer</span>
-                <span className="text-foreground font-semibold">{jobData.freelancer}</span>
+                <span className="text-muted-foreground">Freelancer Wallet</span>
+                <span className="text-foreground font-semibold text-sm truncate max-w-[150px]">{jobData.freelancer_address}</span>
               </div>
             </CardContent>
           </Card>
@@ -103,47 +165,54 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
             <CardTitle>Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {isConfirming && !synced && <div className="text-yellow-500 mb-2 font-bold animate-pulse">Waiting for Web3 Transaction to confirm...</div>}
+            {isSuccess && !synced && <div className="text-green-500 mb-2 font-bold">Transaction Confirmed! Syncing...</div>}
+            
             {isClient ? (
               <>
                 <Button
                   onClick={handleReleasePayment}
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+                  disabled={isPending || isConfirming || jobData.escrow_status !== "ACTIVE" || jobData.proposal_status === "COMPLETED"}
+                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-semibold disabled:opacity-50"
                   size="lg"
                 >
-                  Release Payment
+                  {isPending ? "Confirming..." : "Release Payment"}
                 </Button>
                 <Button
                   onClick={() => setShowDispute(true)}
+                  disabled={isPending || isConfirming || jobData.escrow_status !== "ACTIVE"}
                   variant="outline"
-                  className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                  className="w-full border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   size="lg"
                 >
                   Raise Dispute
                 </Button>
               </>
-            ) : (
+            ) : isFreelancer ? (
               <>
                 <Button
                   onClick={handleSubmitWork}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  disabled={jobData.escrow_status !== "ACTIVE" || jobData.proposal_status === "COMPLETED"}
+                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold disabled:opacity-50"
                   size="lg"
                 >
-                  Submit Work
+                  {jobData.proposal_status === "COMPLETED" ? "Payment Released!" : "Submit Work"}
                 </Button>
                 <Button
                   onClick={() => setShowDispute(true)}
+                  disabled={isPending || isConfirming || jobData.escrow_status !== "ACTIVE"}
                   variant="outline"
-                  className="w-full border-destructive text-destructive hover:bg-destructive/10"
+                  className="w-full border-destructive text-destructive hover:bg-destructive/10 disabled:opacity-50"
                   size="lg"
                 >
                   Raise Dispute
                 </Button>
               </>
-            )}
+            ) : null}
 
             <div className="mt-6 pt-6 border-t border-border">
-              <p className="text-xs text-muted-foreground mb-2">Budget</p>
-              <p className="text-2xl font-bold text-accent">{jobData.budget} ETH</p>
+              <p className="text-xs text-muted-foreground mb-2">Escrow Locked Budget</p>
+              <p className="text-2xl font-bold text-accent">{jobData.escrow_balance_eth || jobData.budget_eth} ETH</p>
             </div>
           </CardContent>
         </Card>
