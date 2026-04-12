@@ -20,8 +20,11 @@ interface ApplyJobDialogProps {
   jobTitle: string
 }
 
+import { useAccount } from 'wagmi'
+
 export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
   const { data: session } = useSession()
+  const { address, isConnected } = useAccount()
   const [message, setMessage] = useState("")
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
@@ -38,9 +41,11 @@ export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
         return
     }
 
-    // In a real app we'd get this from the wallet connect state
-    // For now we mock it or grab from session if available
-    const freelancerAddress = "0xfafafafafafafafafafafafafafafafafafafafa"; 
+    if (!isConnected || !address) {
+        alert("Please connect your Web3 Wallet before submitting a proposal.");
+        return;
+    } 
+    const freelancerAddress = address; 
 
     setLoading(true)
     try {
@@ -53,6 +58,9 @@ export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
 
         const response = await fetch(`${apiUrl}/jobs/${jobId}/propose/`, {
             method: "POST",
+            headers: {
+                "Authorization": `Bearer ${(session as any)?.accessToken}`
+            },
             body: formData, // Auto-sets Content-Type to multipart/form-data
         })
 

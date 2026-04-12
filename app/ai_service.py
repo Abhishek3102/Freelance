@@ -17,7 +17,7 @@ try:
     # Given the user specifically asked for "gemini-flash-lite-latest", I will try to use a safe "flash" variant 
     # that is likely to work, or the 1.5 flash which is very fast/cheap.
     # I'll use "gemini-1.5-flash" as it is the current standard for high performant/cheap tasks.
-    model = genai.GenerativeModel('gemini-1.5-flash') 
+    model = genai.GenerativeModel(MODEL_NAME) 
 except Exception as e:
     logger.error(f"Failed to configure Gemini: {e}")
     model = None

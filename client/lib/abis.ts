@@ -15,6 +15,34 @@ export const ESCROW_ABI = [
     {
         "inputs": [
             {
+                "internalType": "address payable",
+                "name": "_client",
+                "type": "address"
+            },
+            {
+                "internalType": "address payable",
+                "name": "_freelancer",
+                "type": "address"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_amount",
+                "type": "uint256"
+            },
+            {
+                "internalType": "uint256",
+                "name": "_contractId",
+                "type": "uint256"
+            }
+        ],
+        "name": "createJob",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
                 "internalType": "uint256",
                 "name": "_jobId",
                 "type": "uint256"

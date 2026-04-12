@@ -10,9 +10,12 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 
+import { useAccount } from 'wagmi'
+
 export default function PostJobPage() {
   const { data: session } = useSession()
   const router = useRouter()
+  const { address, isConnected } = useAccount()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
       title: "",
@@ -28,12 +31,17 @@ export default function PostJobPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!isConnected || !address) {
+        alert("Please connect your Web3 Wallet before posting a job.");
+        return;
+    }
+    
     setLoading(true)
 
     try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-        // Mock client address for now if not connected to wallet
-        const clientAddress = "0x71C7656EC7ab88b098defB751B7401B5f6d8976F" 
+        const clientAddress = address; // Dynamically bind connected wallet
         
         const response = await fetch(`${apiUrl}/jobs/post/`, {
             method: "POST",
@@ -42,7 +50,6 @@ export default function PostJobPage() {
                 // @ts-ignore
                 "Authorization": `Bearer ${session?.accessToken}`
             },
-            // credentials: "include", // No longer needed if using Bearer token, but harmless to keep. Removed to be clean.
             body: JSON.stringify({
                 client_address: clientAddress,
                 title: formData.title,

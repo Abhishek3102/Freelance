@@ -80,19 +80,20 @@ contract FreelanceEscrow {
      * @param _contractId ID from the centralized DB/API.
      */
     function createJob(
+        address payable _client,
         address payable _freelancer,
         uint256 _amount,
         uint256 _contractId
     ) external {
         uint256 jobId = nextJobId++;
         jobs[jobId] = Job(
-            payable(msg.sender),
+            _client,
             _freelancer,
             _amount,
             Status.CREATED,
             _contractId
         );
-        emit JobCreated(jobId, msg.sender, _freelancer, _amount, _contractId);
+        emit JobCreated(jobId, _client, _freelancer, _amount, _contractId);
     }
 
     /**

@@ -25,3 +25,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python
+app/__pycache__/
+*.pyc
+
+# qdrant
+local_qdrant_db/
+
+# hardhat
+ignition/deployments/

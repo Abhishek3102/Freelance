@@ -57,7 +57,7 @@ export default function ClientJobsPage() {
                         <CardContent>
                             <div className="flex justify-between items-center">
                                 <div className="text-sm text-white/50">Posted on: {new Date(job.posted_at || Date.now()).toLocaleDateString()}</div>
-                                <ApplicantsDialog jobId={job.id} jobTitle={job.title} clientAddress={job.client_address} />
+                                <ApplicantsDialog job={job} />
                             </div>
                         </CardContent>
                     </Card>
@@ -70,7 +70,15 @@ export default function ClientJobsPage() {
   )
 }
 
-function ApplicantsDialog({ jobId, jobTitle, clientAddress }: { jobId: string, jobTitle: string, clientAddress: string }) {
+const JOB_STATUS_OPEN = "Job is open for proposals.";
+const JOB_STATUS_ACCEPTED = "Proposal accepted, waiting for escrow funding.";
+const JOB_STATUS_ACTIVE = "Escrow funded, work in progress.";
+const JOB_STATUS_COMPLETED = "Job finished and payment released.";
+
+function ApplicantsDialog({ job }: { job: any }) {
+    const jobId = job.id;
+    const jobTitle = job.title;
+    const clientAddress = job.client_address;
     const { data: session } = useSession()
     const [applicants, setApplicants] = useState<any[]>([])
     const [loading, setLoading] = useState(false)
@@ -90,6 +98,8 @@ function ApplicantsDialog({ jobId, jobTitle, clientAddress }: { jobId: string, j
             setLoading(false)
         }
     }
+
+    const isJobLocked = job.status !== JOB_STATUS_OPEN || applicants.some(a => a.status === "ACCEPTED");
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => {
@@ -150,7 +160,9 @@ function ApplicantsDialog({ jobId, jobTitle, clientAddress }: { jobId: string, j
                                                 </div>
                                             )}
                                         </div>
-                                        <Badge variant="outline" className="text-zinc-400 border-zinc-600">{app.status}</Badge>
+                                        <Badge variant="outline" className={`border-zinc-600 ${(app.status === 'ACCEPTED' || (job.status !== JOB_STATUS_OPEN && job.freelancer_address?.toLowerCase() === app.freelancer_address?.toLowerCase())) ? 'text-green-400 bg-green-500/10' : app.status === 'REJECTED' ? 'text-red-400 bg-red-500/10' : 'text-zinc-400'}`}>
+                                            {(app.status === 'ACCEPTED' || (job.status !== JOB_STATUS_OPEN && job.freelancer_address?.toLowerCase() === app.freelancer_address?.toLowerCase())) ? 'ACCEPTED' : app.status}
+                                        </Badge>
                                     </div>
 
                                     {/* Cover Letter */}
@@ -200,44 +212,66 @@ function ApplicantsDialog({ jobId, jobTitle, clientAddress }: { jobId: string, j
                                     )}
 
                                     <div className="flex gap-3 pt-2">
-                                        <Button 
-                                            size="sm" 
-                                            className="bg-green-600 hover:bg-green-700 cursor-pointer w-32"
-                                            onClick={async () => {
-                                                if (!confirm(`Accept proposal from ${app.resume_structured?.name || "Freelancer"}? This will create an Escrow contract.`)) return
-                                                
-                                                try {
-                                                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-                                                    // Construct query params
-                                                    const params = new URLSearchParams({
-                                                        freelancer_address: app.freelancer_address,
-                                                        client_address_from_request: clientAddress // Passed from props
-                                                    })
+                                        {(app.status === "ACCEPTED" || (job.status !== JOB_STATUS_OPEN && job.freelancer_address?.toLowerCase() === app.freelancer_address?.toLowerCase())) && job.status === JOB_STATUS_ACCEPTED && (
+                                            <Button 
+                                                size="sm" 
+                                                className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold cursor-pointer"
+                                                onClick={() => window.location.href = `/jobs/${jobId}/escrow`}
+                                            >
+                                                Fund Escrow
+                                            </Button>
+                                        )}
+                                        
+                                        {(app.status === "ACCEPTED" || (job.status !== JOB_STATUS_OPEN && job.freelancer_address?.toLowerCase() === app.freelancer_address?.toLowerCase())) && (job.status === JOB_STATUS_ACTIVE || job.status === JOB_STATUS_COMPLETED) && (
+                                            <Button 
+                                                size="sm" 
+                                                className="bg-purple-600 hover:bg-purple-700 text-white font-bold cursor-pointer"
+                                                onClick={() => window.location.href = `/workroom/${jobId}`}
+                                            >
+                                                Enter Workroom
+                                            </Button>
+                                        )}
+                                        
+                                        {app.status === "PENDING" && !isJobLocked && (
+                                            <Button 
+                                                size="sm" 
+                                                className="bg-green-600 hover:bg-green-700 cursor-pointer w-32"
+                                                onClick={async () => {
+                                                    if (!confirm(`Accept proposal from ${app.resume_structured?.name || "Freelancer"}? This will create an Escrow contract.`)) return
                                                     
-                                                    const response = await fetch(`${apiUrl}/jobs/${jobId}/accept/?${params.toString()}`, {
-                                                        method: "POST",
-                                                        headers: {
-                                                            "Authorization": `Bearer ${(session as any)?.accessToken}`
+                                                    try {
+                                                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+                                                        // Construct query params
+                                                        const params = new URLSearchParams({
+                                                            freelancer_address: app.freelancer_address,
+                                                            client_address_from_request: clientAddress // Passed from props
+                                                        })
+                                                        
+                                                        const response = await fetch(`${apiUrl}/jobs/${jobId}/accept/?${params.toString()}`, {
+                                                            method: "POST",
+                                                            headers: {
+                                                                "Authorization": `Bearer ${(session as any)?.accessToken}`
+                                                            }
+                                                        })
+                                                        
+                                                        if (response.ok) {
+                                                            const data = await response.json()
+                                                            alert(`Success! Escrow created. TX: ${data.escrow_tx_hash}`)
+                                                            // Update local state to show accepted
+                                                            setApplicants(prev => prev.map(p => p.id === app.id ? { ...p, status: "ACCEPTED" } : p))
+                                                        } else {
+                                                            const err = await response.json()
+                                                            alert(`Failed: ${err.detail}`)
                                                         }
-                                                    })
-                                                    
-                                                    if (response.ok) {
-                                                        const data = await response.json()
-                                                        alert(`Success! Escrow created. TX: ${data.escrow_tx_hash}`)
-                                                        // Update local state to show accepted
-                                                        setApplicants(prev => prev.map(p => p.id === app.id ? { ...p, status: "ACCEPTED" } : p))
-                                                    } else {
-                                                        const err = await response.json()
-                                                        alert(`Failed: ${err.detail}`)
+                                                    } catch (e) {
+                                                        console.error("Accept failed", e)
+                                                        alert("Failed to accept proposal. Check console.")
                                                     }
-                                                } catch (e) {
-                                                    console.error("Accept failed", e)
-                                                    alert("Failed to accept proposal. Check console.")
-                                                }
-                                            }}
-                                        >
-                                            Accept Proposal
-                                        </Button>
+                                                }}
+                                            >
+                                                Accept Proposal
+                                            </Button>
+                                        )}
                                         
                                         {/* View Resume Button */}
                                         {app.resume_link && (
@@ -248,30 +282,32 @@ function ApplicantsDialog({ jobId, jobTitle, clientAddress }: { jobId: string, j
                                             </a>
                                         )}
                                         
-                                        <Button 
-                                            size="sm" 
-                                            variant="ghost" 
-                                            className="text-red-400 hover:text-red-300 hover:bg-red-500/20 cursor-pointer ml-auto"
-                                            onClick={async () => {
-                                                if (!confirm("Are you sure you want to reject this proposal?")) return
-                                                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-                                                try {
-                                                     const response = await fetch(`${apiUrl}/proposals/${app.id}/reject/`, {
-                                                        method: "POST",
-                                                        headers: {
-                                                            "Authorization": `Bearer ${(session as any)?.accessToken}`
-                                                        }
-                                                     })
-                                                     if (response.ok) {
-                                                         setApplicants(prev => prev.filter(p => p.id !== app.id))
-                                                     }
-                                                } catch (e) {
-                                                    console.error("Failed to reject", e)
-                                                }
-                                            }}
-                                        >
-                                            Reject
-                                        </Button>
+                                        {app.status === "PENDING" && !isJobLocked && (
+                                            <Button 
+                                                size="sm" 
+                                                variant="ghost" 
+                                                className="text-red-400 hover:text-red-300 hover:bg-red-500/20 cursor-pointer ml-auto"
+                                                onClick={async () => {
+                                                    if (!confirm("Are you sure you want to reject this proposal?")) return
+                                                    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+                                                    try {
+                                                         const response = await fetch(`${apiUrl}/proposals/${app.id}/reject/`, {
+                                                            method: "POST",
+                                                            headers: {
+                                                                "Authorization": `Bearer ${(session as any)?.accessToken}`
+                                                            }
+                                                         })
+                                                         if (response.ok) {
+                                                             setApplicants(prev => prev.map(p => p.id === app.id ? { ...p, status: "REJECTED" } : p))
+                                                         }
+                                                    } catch (e) {
+                                                        console.error("Failed to reject", e)
+                                                    }
+                                                }}
+                                            >
+                                                Reject
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             ))}

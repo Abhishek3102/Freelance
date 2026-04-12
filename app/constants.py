@@ -38,6 +38,7 @@ JOB_STATUSES = {
     "ESCROW_ACTIVE": "Escrow funded, work in progress.",
     "WORK_SUBMITTED": "Freelancer submitted work, waiting for client approval.",
     "COMPLETED": "Job finished and payment released.",
+    "DISPUTED": "Job is under dispute, funds frozen pending arbiter review.",
     "CANCELED": "Job canceled or dispute resolved."
 }
 
