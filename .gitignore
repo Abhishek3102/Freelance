@@ -1,6 +1,8 @@
 node_modules
 .env
 
+/client/public/resumes
+
 # Hardhat files
 /cache
 /artifacts
@@ -17,3 +19,16 @@ node_modules
 ignition/deployments/chain-31337
 
 md/
+
+*.sqlite
+*.db
+
+# python
+app/__pycache__/
+*.pyc
+
+# qdrant
+local_qdrant_db/
+
+# hardhat
+ignition/deployments/
