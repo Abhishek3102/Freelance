@@ -27,17 +27,6 @@ export default function DisputesPage() {
         <div className="bg-red-500/10 border border-red-500 text-red-500 p-6 rounded-lg max-w-lg text-center shadow-lg">
           <h2 className="text-xl font-bold mb-4">Unauthorized Access Warning</h2>
           <p className="mb-4">This page requires the Arbiter's wallet to be connected.</p>
-          
-          <div className="bg-black/50 p-3 rounded text-left mb-4 overflow-x-auto">
-              <p className="text-sm font-mono mb-1"><span className="text-gray-400">Expected:</span> {ARBITER_ADDRESS}</p>
-              <p className="text-sm font-mono break-all text-yellow-400">
-                <span className="text-gray-400">Connected:</span> {address || "NULL (No wallet connected)"}
-              </p>
-          </div>
-
-          <p className="mt-2 text-sm text-gray-400">
-            <strong>To fix this:</strong> Switch to your Arbiter account in MetaMask. The page should instantly unlock when the correct wallet connects.
-          </p>
         </div>
       </main>
     )
