@@ -227,6 +227,35 @@ async def create_escrow_contract_tx(
         # Expose the real error message to the frontend for debugging
         raise Exception(f"Failed to submit escrow creation transaction: {str(e)}")
 
+async def resolve_escrow_dispute_tx(contract_job_id: int, client_share: int) -> str:
+    """Creates a signed transaction for the platform to resolve a dispute."""
+    if not settings.PRIVATE_KEY:
+        raise Exception("PLATFORM_PRIVATE_KEY not configured.")
+
+    platform_address: ChecksumAddress = w3.to_checksum_address(settings.PLATFORM_ADDRESS)
+    
+    try:
+        tx = ESCROW_CONTRACT.functions.resolveDispute(
+            contract_job_id,
+            client_share
+        ).build_transaction({
+            'chainId': settings.CHAIN_ID,
+            'gas': 500000, 
+            'nonce': w3.eth.get_transaction_count(platform_address),
+            'from': platform_address,
+            'value': 0 
+        })
+
+        signed_tx = w3.eth.account.sign_transaction(tx, private_key=settings.PRIVATE_KEY)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        logger.info(f"Broadcasted dispute resolution TX: {tx_hash.hex()}")
+        w3.eth.wait_for_transaction_receipt(tx_hash)
+        
+        return tx_hash.hex()
+    except Exception as e:
+        logger.error(f"Failed to submit dispute resolution transaction: {e}", exc_info=True)
+        raise Exception(f"Failed to execute resolveDispute on blockchain: {str(e)}")
+
 # --- Pinata IPFS Logic ---
 
 async def pin_json_to_pinata(data: Dict[str, Any]) -> str:

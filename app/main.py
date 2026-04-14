@@ -11,9 +11,13 @@ from app.models import (
     JobPost, FreelancerProfile, MatchResult, JobStatusResponse, 
     RatingSubmission, ProposalIn, Proposal, Notification
 )
+from pydantic import BaseModel
+
+class DisputeResolutionRequest(BaseModel):
+    client_share: int
 from app.services import (
     match_freelancers_to_job, get_escrow_status, submit_immutable_rating_to_contract,
-    create_escrow_contract_tx
+    create_escrow_contract_tx, resolve_escrow_dispute_tx
 )
 from app.db_service import (
     connect_to_mongo, close_mongo_connection, log_job_post, get_job_by_id, 
@@ -129,11 +133,11 @@ async def get_freelancers(current_user: dict = Depends(get_current_user)):
     # NOTE: The original code likely had `db` defined globally or was pseudo-code. 
     # I am not fixing this endpoint specifically unless requested, but preventing crash.
 
-# Endpoint 0: Get All Jobs (Public or Protected?) -> Public for "Find Work" landing
+# Endpoint 0: Get All Jobs -> Public freelancer feed, ONLY shows open jobs
 @app.get("/jobs/", response_model=List[dict])
 async def get_jobs(db_client: Depends = Depends(get_db_client)):
-    """Retrieves all open jobs for the feed."""
-    return await get_all_jobs(db_client)
+    """Retrieves only OPEN jobs for the freelancer feed. Filters out assigned/in-progress/completed jobs."""
+    return await get_all_jobs(db_client, open_only=True)
 
 # Endpoint 1: Client posts a new job
 @app.post("/jobs/post/")
@@ -174,12 +178,13 @@ async def get_posted_jobs(
     db_client: Depends = Depends(get_db_client),
     current_user: dict = Depends(get_current_user)
 ):
-    """Retrieves all jobs posted by the currently logged-in user."""
+    """Retrieves ALL jobs posted by the currently logged-in client (all statuses shown)."""
     if not current_user:
         raise HTTPException(status_code=401, detail="Authentication required")
         
     user_id = current_user.get("sub")
-    return await get_all_jobs(db_client, posted_by_user_id=user_id)
+    # open_only=False so clients can see all their jobs regardless of status
+    return await get_all_jobs(db_client, posted_by_user_id=user_id, open_only=False)
 
 # Endpoint 1.6: Get applicants for a specific job (Client View)
 @app.get("/jobs/{job_id}/applicants/", response_model=List[dict])
@@ -515,6 +520,77 @@ async def dispute_job(job_id: str, db_client: Depends = Depends(get_db_client)):
     except Exception as e:
         logger.error(f"Error disputing job {job_id}: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Failed to dispute job: {str(e)}")
+
+# Endpoint 5.7: Resolve Dispute (Admin Only)
+@app.post("/jobs/{job_id}/resolve-dispute/")
+async def resolve_dispute(
+    job_id: str, 
+    resolution: DisputeResolutionRequest,
+    db_client: Depends = Depends(get_db_client),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Arbiter (Admin) resolves the dispute. 
+    Calls contract resolveDispute with client_share.
+    """
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    # TODO: Add specific Admin role check here if roles are implemented
+    
+    try:
+        job_doc = await get_job_by_id(db_client, job_id)
+        if not job_doc:
+            raise HTTPException(status_code=404, detail="Job not found.")
+        
+        if job_doc.get("status") != JOB_STATUSES["DISPUTED"]:
+            raise HTTPException(status_code=400, detail="Job is not in a disputed state.")
+
+        contract_id = job_doc.get("escrow_contract_id")
+        if contract_id is None:
+            raise HTTPException(status_code=400, detail="No on-chain escrow found for this job.")
+
+        # 1. Execute the on-chain transaction
+        tx_hash = await resolve_escrow_dispute_tx(contract_id, resolution.client_share)
+
+        # 2. Update status in MongoDB
+        await update_job_by_id(db_client, job_id, {"status": "Job finished and payment released."})
+
+        # Notify parties
+        client_user_id = job_doc.get("created_by_user_id")
+        if client_user_id:
+            await log_notification(db_client, client_user_id, f"Dispute resolved for '{job_doc['title']}'. Funds distributed.", "INFO")
+        
+        return {
+            "message": "Dispute resolved successfully on-chain.",
+            "tx_hash": tx_hash
+        }
+    except Exception as e:
+        logger.error(f"Error resolving dispute for job {job_id}: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to resolve dispute: {str(e)}")
+
+# Endpoint 5.8: Get All Disputed Jobs (Admin Only)
+@app.get("/admin/disputes/", response_model=List[dict])
+async def get_disputes(
+    db_client: Depends = Depends(get_db_client),
+    current_user: dict = Depends(get_current_user)
+):
+    """Retrieves all jobs currently in a DISPUTED state."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    # TODO: Add Admin role check
+    
+    try:
+        db = db_client[settings.DATABASE_NAME]
+        cursor = db["jobs"].find({"status": JOB_STATUSES["DISPUTED"]})
+        jobs = await cursor.to_list(length=100)
+        
+        for job in jobs:
+            job["_id"] = str(job["_id"])
+        return jobs
+    except Exception as e:
+        logger.error(f"Error fetching disputes: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to fetch disputes: {str(e)}")
+
 
 # Endpoint 6: Submit Immutable Rating (Platform Action)
 @app.post("/rating/submit/")

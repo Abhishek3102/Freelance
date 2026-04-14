@@ -9,7 +9,7 @@ qdrant-client
 fastembed
 spacy
 pypdf
-google-generativeai
+google-genai
 websockets
 pydantic-settings
 PyJWT

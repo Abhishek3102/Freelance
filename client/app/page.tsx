@@ -37,11 +37,11 @@ export default function Home() {
             playsInline
             className="absolute top-0 left-0 w-full h-full object-cover z-0 opacity-80"
           >
-            <source src="/videos/homepage%20bg.mp4" type="video/mp4" />
+            <source src="/videos/bg_video_latest.mp4" type="video/mp4" />
           </video>
 
-          {/* Overlay */}
-          <div className="absolute top-0 left-0 w-full h-full bg-black/40 z-10 backdrop-blur-[2px]" />
+          {/* Overlay — darkens the video so content above stays readable */}
+          <div className="absolute top-0 left-0 w-full h-full bg-black/65 z-10 backdrop-blur-[1px]" />
 
           {/* Nav & Content */}
           <div className="relative z-20 w-full flex-1 flex flex-col">
