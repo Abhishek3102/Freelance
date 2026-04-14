@@ -1,4 +1,4 @@
-import google.generativeai as genai
+from google import genai
 from .config import settings
 import json
 import logging
@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 # Configure Gemini
 try:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
     # Use the requested Flash Lite model if available, or fallback to flash
     MODEL_NAME = "gemini-flash-lite-latest" 
     # NOTE: Exact model name might vary. Using a standard stable one as backup or the user specified one.
@@ -17,17 +17,16 @@ try:
     # Given the user specifically asked for "gemini-flash-lite-latest", I will try to use a safe "flash" variant 
     # that is likely to work, or the 1.5 flash which is very fast/cheap.
     # I'll use "gemini-1.5-flash" as it is the current standard for high performant/cheap tasks.
-    model = genai.GenerativeModel(MODEL_NAME) 
 except Exception as e:
     logger.error(f"Failed to configure Gemini: {e}")
-    model = None
+    client = None
 
 def structure_resume_content(raw_text: str, job_description: str = "") -> dict:
     """
     Uses Gemini to extract structured data from raw resume text.
     Returns a JSON dict with keys: name, key_insights (list), summary.
     """
-    if not model:
+    if not client:
         logger.warning("Gemini model not available. Returning raw text wrapper.")
         return {"raw_text": raw_text, "summary": "AI Parsing Unavailable"}
 
@@ -48,7 +47,10 @@ def structure_resume_content(raw_text: str, job_description: str = "") -> dict:
     """
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model=MODEL_NAME,
+            contents=prompt
+        )
         cleaned_text = response.text.replace("```json", "").replace("```", "").strip()
         data = json.loads(cleaned_text)
         return data

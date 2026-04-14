@@ -141,13 +141,15 @@ async def get_proposals_for_job(client: AsyncIOMotorClient, job_id: str) -> List
         logger.error(f"Failed to fetch proposals for job {job_id}: {e}", exc_info=True)
         return []
 
-async def get_all_jobs(client: AsyncIOMotorClient, limit: int = 100, posted_by_user_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Retrieves a list of jobs, sorted by newest first. Optionally filters by user_id."""
+async def get_all_jobs(client: AsyncIOMotorClient, limit: int = 100, posted_by_user_id: Optional[str] = None, open_only: bool = False) -> List[Dict[str, Any]]:
+    """Retrieves a list of jobs, sorted by newest first. Optionally filters by user_id or open status."""
     try:
         db = client[DATABASE_NAME]
         query = {}
         if posted_by_user_id:
              query["created_by_user_id"] = posted_by_user_id
+        if open_only:
+            query["status"] = "Job is open for proposals."
              
         jobs = await db["jobs"].find(query).sort("_id", -1).limit(limit).to_list(limit)
         # Convert ObjectId to str
