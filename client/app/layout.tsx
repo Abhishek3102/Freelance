@@ -33,6 +33,7 @@ export const metadata: Metadata = {
 
 import AuthGuard from "@/components/auth-guard" 
 import { Toaster } from "@/components/ui/toaster"
+import { Toaster as HotToaster } from "react-hot-toast"
 import { NotificationListener } from "@/components/notification-listener" 
 
 export default function RootLayout({
@@ -49,6 +50,7 @@ export default function RootLayout({
             </AuthGuard>
           <Analytics />
           <Toaster />
+          <HotToaster position="top-right" toastOptions={{ style: { background: '#1c1c1e', color: '#fff', border: '1px solid #3f3f46' } }} />
           <NotificationListener />
         </Providers>
       </body>
