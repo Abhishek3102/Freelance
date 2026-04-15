@@ -375,13 +375,21 @@ async def accept_proposal(
         })
 
         # 3. Create the Escrow Job on-chain via the Platform's wallet
-        # The service layer handles signing and sending the transaction to create the escrow job
-        tx_hash, contract_job_id = await create_escrow_contract_tx(
-            job_id=job_id, 
-            client_address=Web3.to_checksum_address(job_doc["client_address"]),
-            freelancer_address=freelancer_address,
-            budget_eth=job_doc["budget_eth"]
-        )
+        try:
+            tx_hash, contract_job_id = await create_escrow_contract_tx(
+                job_id=job_id, 
+                client_address=Web3.to_checksum_address(job_doc["client_address"]),
+                freelancer_address=freelancer_address,
+                budget_eth=job_doc["budget_eth"]
+            )
+        except Exception as escrow_err:
+            # CRITICAL: Roll back job status so client can retry without being stuck
+            await update_job_by_id(db_client, job_id, {
+                "status": JOB_STATUSES["OPEN"],
+                "freelancer_address": None
+            })
+            logger.error(f"Escrow creation failed, rolled back job {job_id}: {escrow_err}")
+            raise HTTPException(status_code=500, detail=f"Failed to create escrow on-chain: {str(escrow_err)}")
         
         # 4. Update Job with the on-chain ID
         await update_job_by_id(db_client, job_id, {

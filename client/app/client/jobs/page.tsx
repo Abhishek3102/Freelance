@@ -212,7 +212,7 @@ function ApplicantsDialog({ job }: { job: any }) {
                                     )}
 
                                     <div className="flex gap-3 pt-2">
-                                        {(app.status === "ACCEPTED" || (job.status !== JOB_STATUS_OPEN && job.freelancer_address?.toLowerCase() === app.freelancer_address?.toLowerCase())) && job.status === JOB_STATUS_ACCEPTED && (
+                                        {(app.status === "ACCEPTED" || (job.status !== JOB_STATUS_OPEN && job.freelancer_address?.toLowerCase() === app.freelancer_address?.toLowerCase())) && job.status === JOB_STATUS_ACCEPTED && job.escrow_contract_id !== undefined && job.escrow_contract_id !== null && (
                                             <Button 
                                                 size="sm" 
                                                 className="bg-yellow-500 hover:bg-yellow-600 text-black font-bold cursor-pointer"

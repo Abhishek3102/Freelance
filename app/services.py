@@ -218,7 +218,7 @@ async def create_escrow_contract_tx(
         })
 
         signed_tx = w3.eth.account.sign_transaction(tx, private_key=settings.PRIVATE_KEY)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
         w3.eth.wait_for_transaction_receipt(tx_hash)
         
         return tx_hash.hex(), contract_job_id
