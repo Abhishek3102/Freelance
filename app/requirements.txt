@@ -13,3 +13,6 @@ google-genai
 websockets
 pydantic-settings
 PyJWT
+python-multipart
+cloudinary
+httpx

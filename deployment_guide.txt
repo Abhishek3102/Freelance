@@ -1,0 +1,4 @@
+# deployement scripts
+npx hardhat run scripts/deploy.js --network sepolia
+
+admin url: http://localhost:3000/admin/disputes
