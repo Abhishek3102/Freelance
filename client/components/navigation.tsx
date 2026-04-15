@@ -142,14 +142,23 @@ export default function Navigation() {
                  </DropdownMenuContent>
                </DropdownMenu>
             ) : (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => signIn()} 
-                  className="text-white hover:text-primary hover:bg-white/5 transition-colors"
-                >
-                  Login
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => router.push("/signin")} 
+                    className="text-white hover:text-primary hover:bg-white/5 transition-colors"
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    onClick={() => router.push("/signup")} 
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-full px-5"
+                  >
+                    Sign Up
+                  </Button>
+                </div>
             )}
 
             {/* Web3 (Wallet) */}
