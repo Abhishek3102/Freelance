@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import toast from "react-hot-toast"
 
 export default function ClientJobsPage() {
     const { data: session } = useSession()
@@ -262,7 +263,7 @@ function ApplicantsDialog({ job, onJobUpdated }: { job: any, onJobUpdated: (upda
 
                                                             if (response.ok) {
                                                                 const data = await response.json()
-                                                                alert(`Success! Escrow created. TX: ${data.escrow_tx_hash}`)
+                                                                toast.success(`Success! Escrow created. TX: ${data.escrow_tx_hash.slice(0,10)}...`)
                                                                 // Update applicant state
                                                                 setApplicants(prev => prev.map(p => p.id === app.id ? { ...p, status: "ACCEPTED" } : p))
                                                                 // Update the parent job card with the new status + escrow ID
@@ -274,11 +275,11 @@ function ApplicantsDialog({ job, onJobUpdated }: { job: any, onJobUpdated: (upda
                                                                 })
                                                             } else {
                                                                 const err = await response.json()
-                                                                alert(`Failed: ${err.detail}`)
+                                                                toast.error(`Failed: ${err.detail}`)
                                                             }
                                                         } catch (e) {
                                                             console.error("Accept failed", e)
-                                                            alert("Failed to accept proposal. Check console.")
+                                                            toast.error("Failed to accept proposal. Check console.")
                                                         }
                                                     }}
                                                 >

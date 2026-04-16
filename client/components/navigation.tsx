@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { useSession, signIn, signOut } from "next-auth/react"
 import { useEffect, useState } from "react"
+import toast from "react-hot-toast"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,34 +51,34 @@ export default function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-8 h-8 bg-primary/80 group-hover:bg-primary rounded-lg flex items-center justify-center transition-colors shadow-lg shadow-primary/20">
+            <div className="w-8 h-8 bg-primary/80 group-hover:bg-primary rounded-lg flex items-center justify-center transition-colors shadow-lg shadow-primary/20 shrink-0">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="font-bold text-lg text-white group-hover:text-primary transition-colors">Freelance</span>
+            <span className="font-bold text-lg text-white group-hover:text-primary transition-colors hidden sm:block">Freelance</span>
           </Link>
 
-          <div className="hidden md:flex gap-8">
+          <div className="flex items-center gap-3 sm:gap-8 mx-2">
             {session?.user && (
               <>
                 {/* Client-only nav links */}
                 {session.user.role === "client" && (
                     <>
                     {isConnected ? (
-                        <Link href="/client/jobs" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        <Link href="/client/jobs" className="text-white/70 hover:text-white transition-colors text-xs sm:text-sm font-medium whitespace-nowrap">
                         My Jobs
                         </Link>
                     ) : (
-                        <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
+                        <span onClick={() => toast.error("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-xs sm:text-sm font-medium cursor-not-allowed whitespace-nowrap">
                         My Jobs
                         </span>
                     )}
 
                     {isConnected ? (
-                        <Link href="/jobs/create" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        <Link href="/jobs/create" className="text-white/70 hover:text-white transition-colors text-xs sm:text-sm font-medium whitespace-nowrap">
                         Post Job
                         </Link>
                     ) : (
-                        <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
+                        <span onClick={() => toast.error("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-xs sm:text-sm font-medium cursor-not-allowed whitespace-nowrap">
                         Post Job
                         </span>
                     )}
@@ -87,11 +88,11 @@ export default function Navigation() {
                 {/* Freelancer-only nav links */}
                 {session.user.role === "freelancer" && (
                     isConnected ? (
-                        <Link href="/jobs" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        <Link href="/jobs" className="text-white/70 hover:text-white transition-colors text-xs sm:text-sm font-medium whitespace-nowrap">
                         Find Work
                         </Link>
                     ) : (
-                        <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
+                        <span onClick={() => toast.error("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-xs sm:text-sm font-medium cursor-not-allowed whitespace-nowrap">
                         Find Work
                         </span>
                     )
@@ -100,7 +101,7 @@ export default function Navigation() {
             )}
           </div>
 
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-2 sm:gap-4 items-center shrink-0">
             {/* Notifications */}
             {session?.user && <NotificationsDropdown />}
 
@@ -108,8 +109,8 @@ export default function Navigation() {
             {session?.user ? (
                <DropdownMenu>
                  <DropdownMenuTrigger asChild>
-                   <Button variant="ghost" className="relative h-10 w-10 rounded-full hover:bg-white/10 focus:ring-0">
-                     <Avatar className="h-10 w-10 border-2 border-primary/20">
+                   <Button variant="ghost" className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-white/10 focus:ring-0">
+                     <Avatar className="h-8 w-8 sm:h-10 sm:w-10 border-2 border-primary/20">
                        <AvatarImage src={session.user.image || ""} alt={session.user.name || "User"} />
                        <AvatarFallback className="bg-primary/20 text-white font-medium">
                          {session.user.name?.charAt(0).toUpperCase() || "U"}
@@ -181,9 +182,9 @@ export default function Navigation() {
             ) : (
               <Button 
                 onClick={handleConnectWallet} 
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-full px-6"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 rounded-full px-3 sm:px-6 text-xs sm:text-sm h-8 sm:h-10 whitespace-nowrap"
               >
-                Connect Wallet
+                Connect<span className="hidden sm:inline">&nbsp;Wallet</span>
               </Button>
             )}
           </div>

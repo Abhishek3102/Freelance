@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useSession } from "next-auth/react"
-import { useToast } from "@/components/ui/use-toast"
+import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -32,7 +32,7 @@ export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
   
   const handleApply = async () => {
     if (!session) {
-      alert("Please login first!")
+      toast.error("Please login to apply for jobs.")
       return
     }
 
@@ -42,7 +42,7 @@ export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
     }
 
     if (!isConnected || !address) {
-        alert("Please connect your Web3 Wallet before submitting a proposal.");
+        toast.error("Please connect your Web3 Wallet before submitting a proposal.");
         return;
     } 
     const freelancerAddress = address; 
@@ -70,13 +70,13 @@ export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
         }
 
         const data = await response.json()
-        alert("Application Submitted! The client will be notified.")
+        toast.success("Application Submitted! The client will be notified.")
         setOpen(false)
         setMessage("")
         setResumeFile(null)
     } catch (err: any) {
         console.error(err)
-        alert(err.message)
+        toast.error(err.message)
     } finally {
         setLoading(false)
     }
@@ -85,7 +85,18 @@ export function ApplyJobDialog({ jobId, jobTitle }: ApplyJobDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-white/10 hover:bg-white/20 text-white border-white/10 border backdrop-blur-sm transition-all group-hover:bg-primary group-hover:border-primary group-hover:text-white">
+        <Button 
+          onClick={(e) => {
+             if (!session) {
+                e.preventDefault();
+                toast.error("Please login to apply for jobs.");
+             } else if (!isConnected) {
+                e.preventDefault();
+                toast.error("Please connect your Web3 Wallet first.");
+             }
+          }}
+          className="w-full bg-white/10 hover:bg-white/20 text-white border-white/10 border backdrop-blur-sm transition-all group-hover:bg-primary group-hover:border-primary group-hover:text-white"
+        >
           Apply Now
         </Button>
       </DialogTrigger>
