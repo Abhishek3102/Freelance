@@ -29,9 +29,7 @@ export default function FindTalentPage() {
     const fetchFreelancers = async () => {
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-        const response = await fetch(`${apiUrl}/freelancers/`, {
-           credentials: "include"
-        })
+        const response = await fetch(`${apiUrl}/freelancers/`)
         
         if (response.ok) {
             const data = await response.json()

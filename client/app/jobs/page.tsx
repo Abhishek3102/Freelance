@@ -31,7 +31,7 @@ export default function FindWorkPage() {
     const fetchJobs = async () => {
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-            const response = await fetch(`${apiUrl}/jobs/`, { credentials: "include" })
+            const response = await fetch(`${apiUrl}/jobs/`)
             
             if (response.ok) {
                 const data = await response.json()

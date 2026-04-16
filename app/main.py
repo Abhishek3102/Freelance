@@ -52,9 +52,20 @@ app = FastAPI(
 )
 
 # ... (CORS setup)
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    "https://freelance-escrow-blockchain.vercel.app",  # Production Vercel frontend
+]
+# Also pick up any additional frontend URL from env (e.g. custom domain)
+import os
+_frontend_url = os.environ.get("FRONTEND_URL")
+if _frontend_url and _frontend_url not in ALLOWED_ORIGINS:
+    ALLOWED_ORIGINS.append(_frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for debugging
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
