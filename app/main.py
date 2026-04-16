@@ -52,9 +52,24 @@ app = FastAPI(
 )
 
 # ... (CORS setup)
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://localhost:3000",
+    # Add your Vercel production URL here, e.g.:
+    # "https://your-app.vercel.app",
+]
+# Also allow any Vercel preview URLs dynamically
+import os
+_vercel_url = os.environ.get("VERCEL_URL")
+if _vercel_url:
+    ALLOWED_ORIGINS.append(f"https://{_vercel_url}")
+_frontend_url = os.environ.get("FRONTEND_URL")  # Set this in Render env vars
+if _frontend_url:
+    ALLOWED_ORIGINS.append(_frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Allow all for debugging
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -92,7 +92,11 @@ function ApplicantsDialog({ job, onJobUpdated }: { job: any, onJobUpdated: (upda
         setLoading(true)
         try {
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
-            const response = await fetch(`${apiUrl}/jobs/${jobId}/applicants/`, { credentials: "include" })
+            const response = await fetch(`${apiUrl}/jobs/${jobId}/applicants/`, {
+                headers: {
+                    "Authorization": `Bearer ${(session as any)?.accessToken}`
+                }
+            })
             if (response.ok) {
                 setApplicants(await response.json())
             }
