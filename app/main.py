@@ -55,16 +55,12 @@ app = FastAPI(
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://localhost:3000",
-    # Add your Vercel production URL here, e.g.:
-    # "https://your-app.vercel.app",
+    "https://freelance-escrow-blockchain.vercel.app",  # Production Vercel frontend
 ]
-# Also allow any Vercel preview URLs dynamically
+# Also pick up any additional frontend URL from env (e.g. custom domain)
 import os
-_vercel_url = os.environ.get("VERCEL_URL")
-if _vercel_url:
-    ALLOWED_ORIGINS.append(f"https://{_vercel_url}")
-_frontend_url = os.environ.get("FRONTEND_URL")  # Set this in Render env vars
-if _frontend_url:
+_frontend_url = os.environ.get("FRONTEND_URL")
+if _frontend_url and _frontend_url not in ALLOWED_ORIGINS:
     ALLOWED_ORIGINS.append(_frontend_url)
 
 app.add_middleware(
