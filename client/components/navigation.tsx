@@ -59,15 +59,16 @@ export default function Navigation() {
           <div className="hidden md:flex gap-8">
             {session?.user && (
               <>
+                {/* Client-only nav links */}
                 {session.user.role === "client" && (
                     <>
                     {isConnected ? (
                         <Link href="/client/jobs" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
-                        Leaderboard
+                        My Jobs
                         </Link>
                     ) : (
                         <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
-                        Leaderboard
+                        My Jobs
                         </span>
                     )}
 
@@ -82,15 +83,16 @@ export default function Navigation() {
                     )}
                     </>
                 )}
-                
-                {session.user.role !== "client" && (
+
+                {/* Freelancer-only nav links */}
+                {session.user.role === "freelancer" && (
                     isConnected ? (
-                        <Link href="/jobs/create" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
-                        Post Job
+                        <Link href="/jobs" className="text-white/70 hover:text-white transition-colors text-sm font-medium cursor-pointer">
+                        Find Work
                         </Link>
                     ) : (
                         <span onClick={() => alert("Please connect your wallet first!")} className="text-white/40 hover:text-white/60 transition-colors text-sm font-medium cursor-not-allowed">
-                        Post Job
+                        Find Work
                         </span>
                     )
                 )}

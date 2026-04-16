@@ -21,6 +21,9 @@ export const authOptions: NextAuthOptions = {
         GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID || "",
             clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+            // Auto-link accounts with the same email to prevent OAuthAccountNotLinked errors.
+            // Safe here since we use Google as our only provider.
+            allowDangerousEmailAccountLinking: true,
         }),
     ],
     callbacks: {
