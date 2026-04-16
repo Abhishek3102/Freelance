@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import toast from "react-hot-toast"
 
 import { ESCROW_ABI } from "@/lib/abis"
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from "wagmi"
@@ -107,7 +108,7 @@ export default function WorkroomView({ jobId }: { jobId: string }) {
   const handleSubmitWork = async () => {
     try {
       // Stub for file submission implementation (link or ipfs)
-      alert("Work Submission placeholder. Currently off-chain collaboration takes place here.")
+      toast.error("Work Submission placeholder. Currently off-chain collaboration takes place here.")
     } catch (error) {
       console.error("Error submitting work:", error)
     }

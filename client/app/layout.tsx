@@ -50,7 +50,7 @@ export default function RootLayout({
             </AuthGuard>
           <Analytics />
           <Toaster />
-          <HotToaster position="top-right" toastOptions={{ style: { background: '#1c1c1e', color: '#fff', border: '1px solid #3f3f46' } }} />
+          <HotToaster position="top-center" toastOptions={{ style: { background: '#1c1c1e', color: '#fff', border: '1px solid #3f3f46' } }} />
           <NotificationListener />
         </Providers>
       </body>

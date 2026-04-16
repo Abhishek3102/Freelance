@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 
 import { useAccount } from 'wagmi'
+import toast from "react-hot-toast"
 
 export default function PostJobPage() {
   const { data: session } = useSession()
@@ -33,7 +34,7 @@ export default function PostJobPage() {
     e.preventDefault()
     
     if (!isConnected || !address) {
-        alert("Please connect your Web3 Wallet before posting a job.");
+        toast.error("Please connect your Web3 Wallet before posting a job.");
         return;
     }
     
@@ -64,7 +65,7 @@ export default function PostJobPage() {
         router.push("/client/jobs")
     } catch (e) {
         console.error(e)
-        alert("Error posting job")
+        toast.error("Error posting job")
     } finally {
         setLoading(false)
     }
