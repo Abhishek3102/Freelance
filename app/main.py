@@ -174,6 +174,10 @@ async def post_job(
         job_data["escrow_contract_id"] = None 
         job_data["freelancer_address"] = None 
         
+        # Add current timestamp so the frontend doesn't show Invalid Date
+        from datetime import datetime, timezone
+        job_data["posted_at"] = datetime.now(timezone.utc).isoformat()
+        
         job_id = await log_job_post(db_client, job_data)
         
         return {"job_id": job_id, "message": "Job posted successfully. Matching is now active."}
