@@ -94,47 +94,6 @@ Contract statuses: `CREATED → ACTIVE → COMPLETE` or `ACTIVE → DISPUTE → 
 
 ---
 
-## Project Structure
-
-```
-Freelance/
-├── contracts/
-│   └── FreelanceEscrow.sol       ← The escrow smart contract
-├── scripts/
-│   └── deploy.js                 ← Hardhat deployment script
-├── hardhat.config.js             ← Hardhat config (Sepolia network)
-├── package.json                  ← Root Node.js deps (Hardhat)
-│
-├── app/                          ← Python FastAPI backend
-│   ├── main.py                   ← All API route handlers
-│   ├── services.py               ← Blockchain calls (Web3.py) + AI matching
-│   ├── db_service.py             ← All MongoDB operations
-│   ├── ai_service.py             ← Gemini resume parsing
-│   ├── models.py                 ← Pydantic request/response models
-│   ├── config.py                 ← Reads settings from .env
-│   ├── constants.py              ← Job/proposal status strings
-│   ├── auth.py                   ← JWT token verification
-│   ├── socket_manager.py         ← WebSocket manager (live notifications)
-│   ├── seed_data.py              ← Seeds initial jobs into MongoDB
-│   └── requirements.txt          ← Python dependencies
-│
-├── client/                       ← Next.js frontend
-│   ├── app/
-│   │   ├── page.tsx              ← Landing page
-│   │   ├── dashboard/            ← Client + Freelancer dashboards
-│   │   ├── jobs/                 ← Job listings & post-a-job
-│   │   ├── workroom/[jobId]/     ← Active job workspace
-│   │   └── admin/disputes/       ← Arbiter-only dispute resolution panel
-│   ├── components/               ← Reusable React components
-│   ├── lib/abis.ts               ← Escrow contract ABI for frontend calls
-│   └── .env.local                ← Frontend environment variables
-│
-├── .env                          ← Backend environment variables
-└── local_qdrant_db/              ← Local Qdrant vector DB (auto-created)
-```
-
----
-
 ## User Roles
 
 | Role | Access |
@@ -144,30 +103,6 @@ Freelance/
 | **Arbiter** | Access `/admin/disputes`, resolve disputes by setting client/freelancer split |
 
 > The Arbiter is identified by the `PLATFORM_ADDRESS` wallet — the same wallet used to deploy the contract. Only this address can call `resolveDispute()`.
-
----
-
-## API Endpoints (Backend)
-
-The backend runs at `http://localhost:8000`. Interactive docs: `http://localhost:8000/docs`
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/jobs/` | All open jobs |
-| `POST` | `/jobs/post/` | Client posts a new job |
-| `GET` | `/jobs/posted/` | Jobs posted by the logged-in user |
-| `GET` | `/jobs/{id}/applicants/` | All proposals for a job (client only) |
-| `POST` | `/jobs/{id}/match/` | Run AI matching for a job |
-| `POST` | `/jobs/{id}/propose/` | Freelancer submits proposal + PDF resume |
-| `POST` | `/proposals/{id}/reject/` | Client rejects a proposal |
-| `POST` | `/jobs/{id}/accept/` | Accept proposal + create on-chain escrow |
-| `POST` | `/jobs/{id}/fund/` | Sync backend after client funds escrow |
-| `GET` | `/jobs/{id}/status/` | Full job + live escrow status |
-| `POST` | `/jobs/{id}/complete/` | Sync backend after payment released |
-| `POST` | `/jobs/{id}/dispute/` | Sync backend after dispute raised |
-| `GET` | `/notifications/` | Fetch user notifications |
-| `PUT` | `/notifications/{id}/read` | Mark a notification as read |
-| `WS` | `/ws/{user_id}` | WebSocket for real-time notifications |
 
 ---
 
