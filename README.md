@@ -6,6 +6,12 @@ A Web3-powered freelance marketplace where clients and freelancers transact dire
 
 ---
 
+## Steps to Run This Project
+
+👉 **[See INSTRUCTIONS.md](./INSTRUCTIONS.md)**
+
+---
+
 ## What Is This?
 
 This is a full-stack decentralized application (dApp) that combines traditional web technologies with blockchain infrastructure to create a commission-free freelance platform. Payments are locked inside an Ethereum smart contract and only released when both parties are satisfied. If there is a disagreement, an impartial on-chain arbiter resolves it.
@@ -106,6 +112,3 @@ Contract statuses: `CREATED → ACTIVE → COMPLETE` or `ACTIVE → DISPUTE → 
 
 ---
 
-## Steps to Run This Project
-
-👉 **[See INSTRUCTIONS.md](./INSTRUCTIONS.md)**
